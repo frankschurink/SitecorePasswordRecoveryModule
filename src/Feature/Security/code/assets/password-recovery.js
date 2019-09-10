@@ -9,6 +9,7 @@
         $(".submit-row input").removeAttr("disabled");
     }
 }
+
 $(document).ready(function () {
     $("#NewPassword, #ConfirmPassword").keyup(checkPasswordMatch);
 
