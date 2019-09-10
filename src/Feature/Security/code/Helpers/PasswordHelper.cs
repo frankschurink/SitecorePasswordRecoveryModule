@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Security;
 using Sitecore.Configuration;
+using Sitecore.Diagnostics;
+using Sitecore.Globalization;
 using Sitecore.PasswordRecovery.Feature.Security.Enums;
 using Sitecore.Security.Accounts;
 
@@ -22,56 +24,72 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
             var user = UserHelper.GetUser(domainName, userName);
             var mUser = Membership.GetUser(user.Name);
 
-            if (user.Profile.GetCustomProperty(Constants.PasswordRecoverToken) == token)
+            if (user.Profile.GetCustomProperty(Constants.CustomProfileProperties.PasswordRecoverToken) == token)
             {
-                if (!string.IsNullOrWhiteSpace(user.Profile.GetCustomProperty(Constants.DateTimeRequest)))
+                if (!string.IsNullOrWhiteSpace(user.Profile.GetCustomProperty(Constants.CustomProfileProperties.DateTimeRequest)))
                 {
-                    var dateTimeRequest = user.Profile.GetCustomProperty(Constants.DateTimeRequest);
-                    var date = DateTime.ParseExact(dateTimeRequest, "dd-MM-yyyy HH:mm:ss", CultureInfo.InvariantCulture);
-                    var difference = DateTime.Now - date;
+                    DateTime.TryParse(user.Profile.GetCustomProperty(Constants.CustomProfileProperties.DateTimeRequest), out var dateTimeRequest);
+                    var difference = DateTime.Now - dateTimeRequest;
 
-                    var expirationHoursToken = Settings.GetSetting("ExpirationHoursToken");
-                    var parseSuccessful = double.TryParse(expirationHoursToken, out var maxExpirationTime);
-
-                    if (parseSuccessful)
+                    var passwordRecoverySettings = Context.Database.GetItem(Constants.SitecoreItemIds.PasswordRecoverySettings);
+                    if (passwordRecoverySettings != null)
                     {
-                        if (difference.TotalHours < maxExpirationTime)
+                        var success = Double.TryParse(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.TokenExpirationTime].Value, out var expirationHoursToken);
+
+                        if (success)
                         {
-                            if (mUser != null)
+                            if (difference.TotalHours < expirationHoursToken)
                             {
-                                if (mUser.IsLockedOut)
+                                if (mUser != null)
                                 {
-                                    mUser.UnlockUser();
+                                    if (mUser.IsLockedOut)
+                                    {
+                                        mUser.UnlockUser();
+                                    }
+
+                                    var oldPassword = mUser.ResetPassword();
+                                    mUser.ChangePassword(oldPassword, newPass);
+
+                                    ResetCustomProperties(user);
+                                    Log.Info($"Password of user {user.Profile.UserName} has been changed successfully ", new PasswordHelper());
+
+                                    return PasswordChangeStatus.PasswordChanged;
                                 }
-
-                                var oldPassword = mUser.ResetPassword();
-                                mUser.ChangePassword(oldPassword, newPass);
-
+                            }
+                            else
+                            {
                                 ResetCustomProperties(user);
+                                Log.Info($"Token expired. Password of user {user.Profile.UserName} could not been changed.", new PasswordHelper());
 
-                                return PasswordChangeStatus.PasswordChanged;
+                                return PasswordChangeStatus.TokenFoundLinkExpired;
                             }
                         }
                         else
                         {
-                            ResetCustomProperties(user);
-                            return PasswordChangeStatus.TokenFoundLinkExpired;
+                            Log.Info($"Error in parsing value of token expiration time.", new PasswordHelper());
                         }
+                    }
+                    else
+                    {
+                        Log.Info($"Password Recovery Settings item not published. Password of user {user.Profile.UserName} could not been changed.", new PasswordHelper());
                     }
                 }
             }
             else
             {
                 ResetCustomProperties(user);
+                Log.Info($"Token not valid. Password of user {user.Profile.UserName} could not been changed.", new PasswordHelper());
+
                 return PasswordChangeStatus.TokenNotValid;
             }
+            Log.Info($"No token found. Password of user {user.Profile.UserName} could not been changed.", new PasswordHelper());
 
             return PasswordChangeStatus.TokenNotFound;
         }
 
         public static void ResetCustomProperties(User u)
         {
-            u.Profile.SetCustomProperty(Constants.PasswordRecoverToken, string.Empty);
+            u.Profile.SetCustomProperty(Constants.CustomProfileProperties.PasswordRecoverToken, string.Empty);
             u.Profile.Initialize(u.Name, true);
             u.Profile.Save();
         }

@@ -24,10 +24,10 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
 
             var token = Guid.NewGuid().ToString();
 
-            UserHelper.SetProfileProperty(user, Constants.PasswordRecoverToken, token);
-            UserHelper.SetProfileProperty(user, Constants.DateTimeRequest, DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"));
+            UserHelper.SetProfileProperty(user, Constants.CustomProfileProperties.PasswordRecoverToken, token);
+            UserHelper.SetProfileProperty(user, Constants.CustomProfileProperties.DateTimeRequest, DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"));
 
-            args.CustomData.Add(Constants.PasswordRecoverToken, token);
+            args.CustomData.Add(Constants.CustomProfileProperties.PasswordRecoverToken, token);
         }
     }
 }

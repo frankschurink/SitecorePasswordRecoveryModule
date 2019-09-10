@@ -17,23 +17,46 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
         public override void Process(PasswordRecoveryArgs args)
         {
             Assert.ArgumentNotNull(args, "args");
-            var token = args.CustomData[Constants.PasswordRecoverToken] as string;
+            var token = args.CustomData[Constants.CustomProfileProperties.PasswordRecoverToken] as string;
             if (string.IsNullOrEmpty(token))
-                return;
-
-            var sender = Settings.GetSetting("PasswordRecoveryFromMail");
-            var emailReceiver = args.UserEmail;
-            var subject = Settings.GetSetting("PasswordRecoveryMailSubject");
-            var user = User.FromName(args.Username, false);
-            var confirmLink = GeneratePasswordRecoverLink(token, args.Username);
-
-            var emailWithLink = new MailMessage(sender, emailReceiver, subject, GetHtmlEmailContent(user, confirmLink))
             {
-                BodyEncoding = Encoding.UTF8,
-                IsBodyHtml = true
-            };
+                return;
+            }
 
-            MainUtil.SendMail(emailWithLink);
+            var webDbName = Settings.GetSetting("WebDatabaseName");
+            if (!string.IsNullOrWhiteSpace(webDbName))
+            {
+                var webDb = Sitecore.Data.Database.GetDatabase(webDbName);
+                var passwordRecoverySettings = webDb.GetItem(Constants.SitecoreItemIds.PasswordRecoverySettings);
+                if (passwordRecoverySettings != null)
+                {
+                    var subject = passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.EmailSubject].Value;
+                    var sender = passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.SenderEmailAddress].Value;
+
+                    var emailReceiver = args.UserEmail;
+                    var user = User.FromName(args.Username, false);
+
+                    var confirmLink = GeneratePasswordRecoverLink(token, args.Username);
+                    var username = args.Username.Substring(args.Username.LastIndexOf('\\') + 1);
+                    var body = string.Format(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.EmailBody].Value, username, confirmLink);
+
+                    try
+                    {
+                        var emailWithLink = new MailMessage(sender, emailReceiver, subject, body)
+                        {
+                            BodyEncoding = Encoding.UTF8,
+                            IsBodyHtml = true
+                        };
+                        MainUtil.SendMail(emailWithLink);
+                        Log.Info($"Password recovery mail send to user: {args.Username}", this);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"Error when sending password recovery mail to user: {args.Username} | Exception: {ex.Message}", this);
+                    }
+                }
+            }       
+            
             args.AbortPipeline();
         }
 
@@ -41,25 +64,6 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
         {
             var serverUrl = StringUtil.EnsurePostfix('/', WebUtil.GetServerUrl());
             return serverUrl + "sitecore/api/security/recoverpassword/" + userName.Replace('\\', '|') + "/" + token;
-        }
-
-        protected virtual string GetHtmlEmailContent(User user, string confirmLink)
-        {
-            var textLineOne = Settings.GetSetting("PasswordRecoveryMailBody1");
-            var textLineTwo = Settings.GetSetting("PasswordRecoveryMailBody2");
-            var textLineThree = Settings.GetSetting("PasswordRecoveryMailBody3");
-            var textLineFour = Settings.GetSetting("PasswordRecoveryMailBody4");
-
-            var sb = new StringBuilder();
-            sb.AppendLine("<html><head><title>");
-            sb.AppendLine("Sitecore wachtwoord herstellen");
-            sb.AppendLine("</title></head><body>");
-            sb.AppendLine("<p>" + textLineOne + "<br/>" + textLineTwo + "<br/><br/>" + textLineThree + "</p>");
-            sb.AppendLine("<a href=\"" + confirmLink + "\">" + confirmLink + "</a>");
-            sb.AppendLine("<p>" + textLineFour + "</p>");
-            sb.AppendLine("</body>");
-            sb.AppendLine("</html>");
-            return sb.ToString();
-        }
+        }    
     }
 }

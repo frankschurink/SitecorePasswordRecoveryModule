@@ -17,12 +17,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
             }
             return null;
         }
-
-        public static string GetProfileProperty(Sitecore.Security.Accounts.User user, string propertyName)
-        {
-            return (user.Profile.GetCustomProperty(propertyName));
-        }
-
+        
         public static void SetProfileProperty(Sitecore.Security.Accounts.User user, string propertyName, string value)
         {
             using (new SecurityDisabler())
