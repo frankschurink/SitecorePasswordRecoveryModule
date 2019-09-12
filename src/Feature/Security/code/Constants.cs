@@ -4,7 +4,7 @@ using System.Linq;
 using System.Web;
 using Sitecore.Data;
 
-namespace Sitecore.PasswordRecovery.Feature.Security
+namespace Sitecore.Creates.Feature.Security
 {
     public struct Constants
     {
@@ -16,7 +16,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security
 
         public struct SitecoreItemIds
         {
-            internal static readonly ID PasswordRecoverySettings = new ID("{ACCF79D2-8631-46CB-9B82-D326CCF353D8}");         
+            internal static readonly ID PasswordRecoverySettings = new ID("{4B04EC19-2626-408B-9419-248E62CD42E7}");         
         }
     }
 }

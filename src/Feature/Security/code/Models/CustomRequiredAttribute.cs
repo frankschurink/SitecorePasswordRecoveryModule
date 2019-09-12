@@ -5,7 +5,7 @@ using System.Linq;
 using System.Web;
 using Sitecore.Globalization;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Models
+namespace Sitecore.Creates.Feature.Security.Models
 {
     public class CustomRequiredAttribute : ValidationAttribute
     {

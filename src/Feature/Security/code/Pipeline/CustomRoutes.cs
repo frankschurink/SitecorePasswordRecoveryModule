@@ -6,7 +6,7 @@ using System.Web.Mvc;
 using System.Web.Routing;
 using Sitecore.Pipelines;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Pipeline
+namespace Sitecore.Creates.Feature.Security.Pipeline
 {
     public class CustomRoutes
     {
@@ -15,4 +15,4 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Pipeline
             RouteTable.Routes.MapRoute("RecoverPassword", "sitecore/api/security/recoverpassword/{userName}/{token}", new { controller = "Security", action = "RecoverPassword" });
         }
     }
-}
+}   

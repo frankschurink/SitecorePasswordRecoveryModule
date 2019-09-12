@@ -10,7 +10,7 @@ using Sitecore.Pipelines.PasswordRecovery;
 using Sitecore.Security.Accounts;
 using Sitecore.Web;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
+namespace Sitecore.Creates.Feature.Security.Infrastructure
 {
     public class PopulatePasswordRecoverMail : PopulateMail
     {
@@ -26,7 +26,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
             var webDbName = Settings.GetSetting("WebDatabaseName");
             if (!string.IsNullOrWhiteSpace(webDbName))
             {
-                var webDb = Sitecore.Data.Database.GetDatabase(webDbName);
+                var webDb = Data.Database.GetDatabase(webDbName);
                 var passwordRecoverySettings = webDb.GetItem(Constants.SitecoreItemIds.PasswordRecoverySettings);
                 if (passwordRecoverySettings != null)
                 {
@@ -34,7 +34,6 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
                     var sender = passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.SenderEmailAddress].Value;
 
                     var emailReceiver = args.UserEmail;
-                    var user = User.FromName(args.Username, false);
 
                     var confirmLink = GeneratePasswordRecoverLink(token, args.Username);
                     var username = args.Username.Substring(args.Username.LastIndexOf('\\') + 1);
@@ -63,7 +62,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
         protected virtual string GeneratePasswordRecoverLink(string token, string userName)
         {
             var serverUrl = StringUtil.EnsurePostfix('/', WebUtil.GetServerUrl());
-            return serverUrl + "sitecore/api/security/recoverpassword/" + userName.Replace('\\', '|') + "/" + token;
+            return serverUrl + "sitecore/api/security/recoverpassword/" + userName.Replace('\\', ',') + "/" + token;
         }    
     }
 }

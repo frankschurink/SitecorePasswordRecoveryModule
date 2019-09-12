@@ -4,11 +4,11 @@ using System.Linq;
 using System.Web;
 using System.Web.Profile;
 using Sitecore.Diagnostics;
-using Sitecore.PasswordRecovery.Feature.Security.Helpers;
+using Sitecore.Creates.Feature.Security.Helpers;
 using Sitecore.Pipelines.PasswordRecovery;
 using Sitecore.Security.Accounts;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Infrastructure
+namespace Sitecore.Creates.Feature.Security.Infrastructure
 {
     public class GenerateToken : PasswordRecoveryProcessor
     {

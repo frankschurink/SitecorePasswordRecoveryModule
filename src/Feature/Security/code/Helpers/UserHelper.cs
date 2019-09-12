@@ -5,7 +5,7 @@ using System.Web;
 using Sitecore.Security.Accounts;
 using Sitecore.SecurityModel;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
+namespace Sitecore.Creates.Feature.Security.Helpers
 {
     public class UserHelper
     {

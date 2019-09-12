@@ -5,11 +5,11 @@ using System.Web;
 using System.Web.Mvc;
 using Sitecore.Globalization;
 using Sitecore.Mvc.Controllers;
-using Sitecore.PasswordRecovery.Feature.Security.Enums;
-using Sitecore.PasswordRecovery.Feature.Security.Helpers;
-using Sitecore.PasswordRecovery.Feature.Security.Models;
+using Sitecore.Creates.Feature.Security.Enums;
+using Sitecore.Creates.Feature.Security.Helpers;
+using Sitecore.Creates.Feature.Security.Models;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Controllers
+namespace Sitecore.Creates.Feature.Security.Controllers
 {
     public class SecurityController : SitecoreController
     {
@@ -30,19 +30,26 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Controllers
 
             if (ModelState.IsValid)
             {
-                switch (PasswordHelper.ChangePassword(username, token, viewModel.ConfirmPassword))
+                if (PasswordHelper.IsValidPassword(viewModel.ConfirmPassword))
                 {
-                    case PasswordChangeStatus.PasswordChanged:
-                        return View("~/Views/Feature/Security/PasswordRecoverSuccess.cshtml", viewModel);
-                    case PasswordChangeStatus.TokenNotFound:
-                        ModelState.AddModelError("", Translate.Text("PasswordReset.TokenNotFound"));
-                        break;
-                    case PasswordChangeStatus.TokenFoundLinkExpired:
-                        ModelState.AddModelError("", Translate.Text("PasswordReset.LinkExpired"));
-                        break;
-                    case PasswordChangeStatus.TokenNotValid:
-                        ModelState.AddModelError("", Translate.Text("PasswordReset.InvalidToken"));
-                        break;
+                    switch (PasswordHelper.ChangePassword(username, token, viewModel.ConfirmPassword))
+                    {
+                        case PasswordChangeStatus.PasswordChanged:
+                            return View("~/Views/Feature/Security/PasswordRecoverSuccess.cshtml", viewModel);
+                        case PasswordChangeStatus.TokenNotFound:
+                            ModelState.AddModelError("", "Something went wrong. Please contact your administrator.");
+                            break;
+                        case PasswordChangeStatus.TokenFoundLinkExpired:
+                            ModelState.AddModelError("", "Your password reset link is expired. Request a new password via Sitecore and try again with the new link.");
+                            break;
+                        case PasswordChangeStatus.TokenNotValid:
+                            ModelState.AddModelError("", "Invalid token used. Request a new password via Sitecore and try again with the new link.");
+                            break;
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError("", "The chosen password does not match the password policy. Please choose a new password.");
                 }
             }
 

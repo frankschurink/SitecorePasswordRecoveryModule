@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Models
+namespace Sitecore.Creates.Feature.Security.Models
 {
     public class PasswordRecoverViewModel
     {
@@ -12,12 +12,15 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Models
         {
         }
 
-        [CustomRequired("PasswordReset.NewPassRequired")]
+        [Required(ErrorMessage = "The field 'New password' is required")]
+        //You can sitecore dictionary items for the error message text instead of hardcoded text
+        //[CustomRequired("")]
         [DataType(DataType.Password)]
-        [RegularExpression("((?=.*\\W|_).{10,})", "PasswordReset.NoStrongPass")]
         public string NewPassword { get; set; }
 
-        [CustomRequired("PasswordReset.ConfirmPassRequired")]
+        [Required(ErrorMessage = "The field 'New password' is required")]
+        //You can sitecore dictionary items for the error message text instead of hardcoded text
+        //[CustomRequired("")]
         [DataType(DataType.Password)]
         public string ConfirmPassword { get; set; }
     }

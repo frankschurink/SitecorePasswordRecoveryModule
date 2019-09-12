@@ -6,18 +6,19 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Security;
 using Sitecore.Configuration;
+using Sitecore.Data.Items;
 using Sitecore.Diagnostics;
 using Sitecore.Globalization;
-using Sitecore.PasswordRecovery.Feature.Security.Enums;
+using Sitecore.Creates.Feature.Security.Enums;
 using Sitecore.Security.Accounts;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
+namespace Sitecore.Creates.Feature.Security.Helpers
 {
     public class PasswordHelper
     {
         public static PasswordChangeStatus ChangePassword(string username, string token, string newPass)
         {
-            var values = username.Split('|');
+            var values = username.Split(',');
             var domainName = values[0];
             var userName = values[1];
 
@@ -50,7 +51,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
                                     var oldPassword = mUser.ResetPassword();
                                     mUser.ChangePassword(oldPassword, newPass);
 
-                                    ResetCustomProperties(user);
+                                    DeleteToken(user);
                                     Log.Info($"Password of user {user.Profile.UserName} has been changed successfully ", new PasswordHelper());
 
                                     return PasswordChangeStatus.PasswordChanged;
@@ -58,7 +59,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
                             }
                             else
                             {
-                                ResetCustomProperties(user);
+                                DeleteToken(user);
                                 Log.Info($"Token expired. Password of user {user.Profile.UserName} could not been changed.", new PasswordHelper());
 
                                 return PasswordChangeStatus.TokenFoundLinkExpired;
@@ -77,7 +78,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
             }
             else
             {
-                ResetCustomProperties(user);
+                DeleteToken(user);
                 Log.Info($"Token not valid. Password of user {user.Profile.UserName} could not been changed.", new PasswordHelper());
 
                 return PasswordChangeStatus.TokenNotValid;
@@ -87,7 +88,7 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
             return PasswordChangeStatus.TokenNotFound;
         }
 
-        public static void ResetCustomProperties(User u)
+        private static void DeleteToken(User u)
         {
             u.Profile.SetCustomProperty(Constants.CustomProfileProperties.PasswordRecoverToken, string.Empty);
             u.Profile.Initialize(u.Name, true);
@@ -96,10 +97,44 @@ namespace Sitecore.PasswordRecovery.Feature.Security.Helpers
 
         public static bool IsValidPassword(string password)
         {
-            var hasNonAlphanumericChar = new Regex(@"\W|_");
-            var hasMinimumTenChars = new Regex(@".{10,}");
+            var passwordRecoverySettings = Context.Database.GetItem(Constants.SitecoreItemIds.PasswordRecoverySettings);
+            if (passwordRecoverySettings != null)
+            {
+                Double.TryParse(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.PasswordLength].Value, out var passwordLength);
+                var minimumCharsRegex = new Regex(@".{" + passwordLength + @",}");
+                   
+                Double.TryParse(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.UpperCaseCharacters].Value, out var upperCaseLength);
+                var upperCaseRegex = new Regex(@"[A-Z]{" + upperCaseLength + @",}");
 
-            return hasNonAlphanumericChar.IsMatch(password) && hasMinimumTenChars.IsMatch(password);
+                Double.TryParse(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.LowerCaseCharacters].Value, out var lowerCaseLength);
+                var lowerCaseRegex = new Regex(@"[a-z]{" + lowerCaseLength + @",}");
+                
+                Double.TryParse(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.NonAlphanumericCharaters].Value, out var nonAlphanumericLength);
+                var nonAlphanumericRegex = new Regex(@"\W|_{" + nonAlphanumericLength + @",}");
+
+                Double.TryParse(passwordRecoverySettings.Fields[Templates.PasswordReoverySettings.NumberCharacters].Value, out var numberLength);
+
+                return minimumCharsRegex.IsMatch(password) && upperCaseRegex.IsMatch(password) &&
+                       lowerCaseRegex.IsMatch(password) && nonAlphanumericRegex.IsMatch(password) && MatchNumberPolicy(password, numberLength);
+            }
+
+            Log.Info("Password Recovery Settings item not found.", new PasswordHelper());
+
+            return false;
+        }
+
+        private static bool MatchNumberPolicy(string password, double numberLength)
+        {
+            double digits = 0;
+            foreach (char c in password)
+            {
+                if (char.IsDigit(c))
+                {
+                    digits++;
+                }
+            }
+
+            return digits >= numberLength;
         }
     }
 }

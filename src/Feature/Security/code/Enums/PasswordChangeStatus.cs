@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
-namespace Sitecore.PasswordRecovery.Feature.Security.Enums
+namespace Sitecore.Creates.Feature.Security.Enums
 {
     public enum PasswordChangeStatus
     {
